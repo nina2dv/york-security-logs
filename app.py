@@ -1,9 +1,5 @@
 import pandas as pd
-import plotly.express as px
-import numpy as np
 import altair as alt
-import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
 
 # emojis: https://www.webfx.com/tools/emoji-cheat-sheet/
