@@ -1,6 +1,9 @@
 import pandas as pd
 import altair as alt
+import matplotlib.pyplot as plt
 import streamlit as st
+from scipy.stats import chi2_contingency
+import seaborn as sns
 
 def app():
     # emojis: https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -18,6 +21,8 @@ def app():
     df['day'] = df['Reported Date'].dt.day
     df['hour'] = pd.to_datetime(df['Reported Time']).dt.hour
     df['hour'] = df['hour'].astype('int')
+    df["day_of_week"] = df['Reported Date'].dt.dayofweek
+
     # st.dataframe(df)
 
 
@@ -33,6 +38,11 @@ def app():
         "Select the month:",
         options=df["month"].unique(),
         default=df["month"].unique(),
+    )
+    day_of_week = st.sidebar.multiselect(
+        "Select the day of the week:",
+        options=df["day_of_week"].unique(),
+        default=df["day_of_week"].unique(),
     )
     hour = st.sidebar.multiselect(
         "Select the hour:",
@@ -52,7 +62,7 @@ def app():
     )
 
     df_selection = df.query(
-        "year == @year & month ==@month & Category == @category & Location == @location & hour == @hour"
+        "day_of_week == @day_of_week & year == @year & month ==@month & Category == @category & Location == @location & hour == @hour"
     )
     # st.dataframe(df_selection)
     # ---- MAINPAGE ----
@@ -95,6 +105,41 @@ def app():
     st.markdown("""---""")
 
     # SALES BY PRODUCT LINE [BAR CHART]
+
+    try:
+        type_loc_cross = pd.crosstab(df_selection["Category"], df_selection["Location"], rownames=["Category"], colnames=["Location"])
+        # st.dataframe(type_loc_cross)
+        Offense_Location_prop = round(type_loc_cross.div(type_loc_cross.sum(axis=1), axis=0) * 100, 2)
+        # st.dataframe(Offense_Location_prop)
+
+        fig, ax = plt.subplots(1, 1, figsize=(30, 18))
+        sns.heatmap(Offense_Location_prop, ax=ax)
+        st.write(fig)
+    except:
+        st.write('Graph not available!* :sunglasses:')
+    left_col, right_col = st.columns(2)
+    with left_col:
+        try:
+            st.markdown("#### Crosstab Category vs. Day of the week")
+            type_dow_cross = pd.crosstab(df['Category'], df['day_of_week'])
+            st.dataframe(type_dow_cross)
+        except:
+            st.write('Graph not available!* :sunglasses:')
+    with right_col:
+        try:
+            type_loc_cross = pd.crosstab(df_selection["Category"], df_selection["Location"], rownames=["Category"],
+                                         colnames=["Location"])
+            g, p, dof, expctd = chi2_contingency(type_loc_cross)
+            st.subheader("p-value of Chi-square test for Category vs. Location:")
+            st.subheader(f"{p}")
+            st.markdown("""---""")
+            g, p, dof, expctd = chi2_contingency(type_dow_cross)
+            st.subheader(f"p-value of Chi-square test for Category vs. Day of week:")
+            st.subheader(f"{p}")
+        except:
+            st.write('Chi-square test not available!* :sunglasses:')
+
+
     try:
         cat_count = (
             df_selection.groupby(['Category', 'month']).size().reset_index(name='counts')
@@ -132,6 +177,41 @@ def app():
         st.altair_chart(line_chart, use_container_width=True)
     except:
         st.write('Graph not available!* :sunglasses:')
+    leftG_column, rightG_column = st.columns(2)
+    with leftG_column:
+        try:
+            cat_count = (
+                df_selection.groupby(['Category', 'day_of_week']).size().reset_index(name='counts')
+            )
+            line_chart = alt.Chart(cat_count).mark_line().encode(
+                y=alt.Y('counts', title='count'),
+                x=alt.X('day_of_week', title='Day of the week'),
+                color="Category"
+            ).properties(
+                height=350, width=700,
+                title="Day of the week reports per category"
+            ).configure_title(
+                fontSize=16
+            )
+
+            st.altair_chart(line_chart, use_container_width=True)
+        except:
+            st.write('Graph not available!* :sunglasses:')
+    with rightG_column:
+        try:
+            dailyGraph = df_selection.groupby(['day_of_week']).size().reset_index(name='incident_counts')
+            line_chart = alt.Chart(dailyGraph).mark_trail().encode(
+                y=alt.Y('incident_counts', title='count'),
+                x=alt.X('day_of_week', title='Day of the week'),
+            ).properties(
+                height=350, width=700,
+                title="Total day of the week reports"
+            ).configure_title(
+                fontSize=16
+            )
+            st.altair_chart(line_chart, use_container_width=True)
+        except:
+            st.write('Graph not available!* :sunglasses:')
 
     try:
         cat_count = (
@@ -204,21 +284,37 @@ def app():
         st.altair_chart(line_chart, use_container_width=True)
     except:
         st.write('Graph not available!* :sunglasses:')
-
-    try:
-        monthlyGraph = df_selection.groupby(['month']).size().reset_index(name='incident_counts')
-        line_chart = alt.Chart(monthlyGraph).mark_trail().encode(
-            y=alt.Y('incident_counts', title='Count'),
-            x=alt.X('month', title='Months'),
-        ).properties(
-            height=350, width=700,
-            title="Total monthly reports"
-        ).configure_title(
-            fontSize=16
-        )
-        st.altair_chart(line_chart, use_container_width=True)
-    except:
-        st.write('Graph not available!* :sunglasses:')
+    leftG_column, rightG_column = st.columns(2)
+    with leftG_column:
+        try:
+            monthlyGraph = df_selection.groupby(['month']).size().reset_index(name='incident_counts')
+            line_chart = alt.Chart(monthlyGraph).mark_trail().encode(
+                y=alt.Y('incident_counts', title='Count'),
+                x=alt.X('month', title='Months'),
+            ).properties(
+                height=350, width=700,
+                title="Total monthly reports"
+            ).configure_title(
+                fontSize=16
+            )
+            st.altair_chart(line_chart, use_container_width=True)
+        except:
+            st.write('Graph not available!* :sunglasses:')
+    with rightG_column:
+        try:
+            hourGraph = df_selection.groupby(['hour']).size().reset_index(name='incident_counts')
+            line_chart = alt.Chart(hourGraph).mark_trail().encode(
+                y=alt.Y('incident_counts', title='Count'),
+                x=alt.X('hour', title='Hour'),
+            ).properties(
+                height=350, width=700,
+                title="Total hourly reports"
+            ).configure_title(
+                fontSize=16
+            )
+            st.altair_chart(line_chart, use_container_width=True)
+        except:
+            st.write('Graph not available!* :sunglasses:')
 
     try:
         dailyGraph = df_selection.groupby(['Reported Date']).size().reset_index(name='incident_counts')
@@ -235,18 +331,5 @@ def app():
     except:
         st.write('Graph not available!* :sunglasses:')
 
-    try:
-        hourGraph = df_selection.groupby(['hour']).size().reset_index(name='incident_counts')
-        line_chart = alt.Chart(hourGraph).mark_trail().encode(
-            y=alt.Y('incident_counts', title='Count'),
-            x=alt.X('hour', title='Hour'),
-        ).properties(
-            height=350, width=700,
-            title="Total hourly reports"
-        ).configure_title(
-            fontSize=16
-        )
-        st.altair_chart(line_chart, use_container_width=True)
-    except:
-        st.write('Graph not available!* :sunglasses:')
+
 
