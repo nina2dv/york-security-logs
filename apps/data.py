@@ -111,7 +111,7 @@ def app():
     csv = convert_df(df_selection)
 
     st.download_button(
-       "Click to Download Filtered Dataframe",
+       "Click Here to Download Filtered Dataframe",
        csv,
        "file.csv",
        "text/csv",
