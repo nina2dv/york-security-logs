@@ -113,7 +113,7 @@ def app():
     st.download_button(
        "Press to Download Filtered Dataframe",
        csv,
-       "file.csv",
+       "york_log.csv",
        "text/csv",
        key='download-csv'
     )
