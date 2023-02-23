@@ -5,6 +5,10 @@ import streamlit as st
 from scipy.stats import chi2_contingency
 import seaborn as sns
 
+@st.experimental_memo
+def convert_df(df):
+   return df.to_csv(index=False).encode('utf-8')
+
 def app():
     # emojis: https://www.webfx.com/tools/emoji-cheat-sheet/
 
@@ -101,7 +105,18 @@ def app():
 
     # Displayed dataframe
     st.dataframe(df_selection)
-    st.download_button(label="Download Filtered Dataframe", data=df_selection, file_name='york_log.csv')
+    
+
+
+    csv = convert_df(df_selection)
+
+    st.download_button(
+       "Press to Download Filtered Dataframe",
+       csv,
+       "file.csv",
+       "text/csv",
+       key='download-csv'
+    )
     st.markdown("""---""")
 
     # SALES BY PRODUCT LINE [BAR CHART]
