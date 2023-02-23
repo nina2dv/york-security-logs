@@ -101,7 +101,7 @@ def app():
 
     # Displayed dataframe
     st.dataframe(df_selection)
-
+    st.download_button(label="Download Filtered Dataframe", data=df_selection, file_name='york_log.csv')
     st.markdown("""---""")
 
     # SALES BY PRODUCT LINE [BAR CHART]
